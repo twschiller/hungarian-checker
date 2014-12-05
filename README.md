@@ -10,11 +10,11 @@ __System Requirements__
 
 __How it Works__
 
-The checker defines two [type annotations](http://www.infoq.com/articles/Type-Annotations-in-Java-8) `@Encrypted` and `@MaybeEncrypted` that specify whether or not an expression is encrypted.
+The checker defines two [type annotations](http://www.infoq.com/articles/Type-Annotations-in-Java-8) `@Safe` and `@Unsafe` that specify whether or not an expression contains has been encoded/escaped.
 
-The checker enforces that expressions with type `@MaybeEncrypted` are not used where a value with type `@Encrypted`  is expected.
+The checker enforces that expressions with type `@Unsafe` are not used where a value with type `@Safe`  is expected.
 
-By default, the checker assumes everything is `@MaybeEncrypted`. The developer can write an `@Encrypted` annotation on a type to denote that the expression is encrypted.  The checker also supports Hungarian Notation: variables and parameters that start with the "e" prefix are automatically given the `@Encrypted` annotation.
+By default, the checker assumes everything is `@Unsafe`. The developer can write a `@Safe` annotation on a type to denote that the expression is encoded/escaped.  The checker also supports Hungarian Notation: variables and parameters that start with the "s" prefix are automatically given the `@Safe` annotation.
 
 __Running the Checker__
 
@@ -31,32 +31,32 @@ __Example Output__
 
 Example source:
 ```
-public @Encrypted String encrypt(String str){ ... }
+public @Safe String encode(String str){ ... }
+public @Unsafe String getUserInput(String str){ ... }
 
-// The eMsg parameter is given the @Encrypted annotation because of the prefix "e"
-public void sendOverNetwork(String eMsg){ ... }
+// The sQuery parameter is given the @Safe annotation because of the prefix "s"
+public void executeSqlQuery(String sQuery){ ... }
 
 public void shouldWarn() {
+  String user = getUserInput();
 
-  String msg = "Top secret message";
+  // WARNING: user is known to be @Unsafe
+  executeSqlQuery("SELECT * FROM table WHERE user='" + user + "'");
+ 
+  user = encode(user);
 
-  // Warning! msg is known to be @MaybeEncrypted
-  sendOverNetwork(msg);
-  
-  msg = encrypt(msg);
-  
-  // Safe! msg is known to be @Encrypted
-  sendOverNetwork(msg);
+  // SAFE: user is known to be @Safe
+  executeSqlQuery("SELECT * FROM table WHERE user='" + user + "'");
 }
 ```
 
 The corresponding checker output:
 
 ```
-HungarianExample.java:29: error: [argument.type.incompatible] incompatible types in argument.
-        sendOverNetwork(msg);
-                        ^
-  found   : @MaybeEncrypted String
-  required: @Encrypted String
+HungarianExample.java:26: error: [argument.type.incompatible] incompatible types in argument.
+        executeSqlQuery("SELECT * FROM table WHERE user='" + user + "'");
+                                                                  ^
+  found   : @Unsafe String
+  required: @Safe String
 ```
 
