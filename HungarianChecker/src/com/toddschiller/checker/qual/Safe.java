@@ -11,15 +11,14 @@ import org.checkerframework.framework.qual.SubtypeOf;
 import org.checkerframework.framework.qual.TypeQualifier;
 
 /**
- * By default, expressions may be either encrypted or unencrypted.
+ * Type qualifier for expressions that are known to be safe (i.e., encoded).
  * @author Todd Schiller
  */
 @TypeQualifier
-@SubtypeOf({})
-@DefaultQualifierInHierarchy
+@SubtypeOf({ Unsafe.class })
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.TYPE_USE, ElementType.TYPE_PARAMETER })
-public @interface MaybeEncrypted {
+public @interface Safe {
     // NOP
 }

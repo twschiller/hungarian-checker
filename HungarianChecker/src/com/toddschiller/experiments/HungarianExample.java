@@ -1,36 +1,37 @@
 package com.toddschiller.experiments;
 
-import com.toddschiller.checker.qual.Encrypted;
+import com.toddschiller.checker.qual.Safe;
+import com.toddschiller.checker.qual.Unsafe;
 
 public class HungarianExample {
 
     @SuppressWarnings("hungarian") // Trust the return value of this method
-    public @Encrypted String encrypt(String str) {
-        char xs[] = str.toCharArray();
-        for (int i = 0; i < xs.length; i++){
-            xs[i] = (char) (xs[i] + 2);
-        }
-        return String.valueOf(xs);
+    public @Safe String encode(String str) {
+        return str.replaceAll("'", "\\'");
     }
     
-    public void sendOverNetwork(String eMessage){
-        System.out.println("Sending message: " + eMessage);
+    @SuppressWarnings("hungarian") // Trust the return value of this method
+    public @Unsafe String getUserInput(){
+        return "' drop tables;";
     }
     
-    public static void main(String [] args){
-        HungarianExample instance = new HungarianExample();
+    public void executeSqlQuery(String sQuery){
+        System.out.println("Executing query: " + sQuery);
+    }
+    
+    public void example(){
+        String user = getUserInput();
         
-        String msg = "Secret message";
+        // WARNING: user is known to be @Unsafe
+        executeSqlQuery("SELECT * FROM table WHERE user='" + user + "'");
         
-        // Warning! By default string literals are unencrypted
-        String eMsg = msg;
+        user = encode(user);
         
-        // Warning! By default string literals are unencrypted
-        instance.sendOverNetwork(msg);
-        
-        msg = instance.encrypt(msg);
-        
-        // This is OK, the checker knows that msg now holds an encrypted value
-        instance.sendOverNetwork(msg);
+        // SAFE: user is known to be @Safe
+        executeSqlQuery("SELECT * FROM table WHERE user='" + user + "'");
+    }
+    
+    public static void main(String [] args) {
+        // NOP
     }
 }

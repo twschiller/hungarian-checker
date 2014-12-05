@@ -15,10 +15,11 @@ import org.checkerframework.framework.type.TreeAnnotator;
 import org.checkerframework.framework.type.TypeAnnotator;
 import org.checkerframework.javacutil.AnnotationUtils;
 
+import com.sun.source.tree.LiteralTree;
 import com.sun.source.tree.VariableTree;
 import com.sun.tools.javac.code.Symbol.MethodSymbol;
 import com.sun.tools.javac.code.Symbol.VarSymbol;
-import com.toddschiller.checker.qual.Encrypted;
+import com.toddschiller.checker.qual.Safe;
 
 /**
  * This type factory annotates formal parameters and variables as {@code @Encrypted} if their
@@ -29,12 +30,12 @@ public class HungarianAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
     protected final boolean debugSpew;
 
-    protected final AnnotationMirror ENCRYPTED;
+    protected final AnnotationMirror SAFE;
     
     /**
-     * Regex for the "e" prefix. 
+     * Regex for the "s" prefix. 
      */
-    private final Pattern encryptedRegex = Pattern.compile("e[A-Z_].*");
+    private final Pattern safeRegex = Pattern.compile("s[A-Z_].*");
     
     public HungarianAnnotatedTypeFactory(BaseTypeChecker checker) {
         // use flow inference
@@ -42,7 +43,7 @@ public class HungarianAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
 
         debugSpew = checker.getLintOption("debugSpew", false);
         
-        ENCRYPTED = AnnotationUtils.fromClass(elements, Encrypted.class);
+        SAFE = AnnotationUtils.fromClass(elements, Safe.class);
         
         this.postInit();
     }
@@ -80,11 +81,11 @@ public class HungarianAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
                 for (int i = 0; i < params.size(); i++){
                     VarSymbol param = params.get(i);
                     
-                    if (encryptedRegex.matcher(params.get(i).getSimpleName()).matches()){
+                    if (safeRegex.matcher(params.get(i).getSimpleName()).matches()){
                         if (debugSpew){
                             System.out.println("Considering parameter " + param + " [MATCH]");
                         }
-                        paramTypes.get(i).replaceAnnotation(ENCRYPTED);
+                        paramTypes.get(i).replaceAnnotation(SAFE);
                     }else if (debugSpew){
                         System.out.println("Considering parameter " + param + " [NO MATCH]");
                     }
@@ -107,17 +108,24 @@ public class HungarianAnnotatedTypeFactory extends BaseAnnotatedTypeFactory {
                 System.out.println("Visiting variable " + node.getName());
             }
             
-            if (encryptedRegex.matcher(node.getName()).matches()){
+            if (safeRegex.matcher(node.getName()).matches()){
                 if (debugSpew){
                     System.out.println("Considering parameter " + node.getName() + " [MATCH]");
                 }
-                type.replaceAnnotation(ENCRYPTED);
+                type.replaceAnnotation(SAFE);
                 
             }else if (debugSpew){
                 System.out.println("Considering parameter " + node.getName() + " [NO MATCH]");
             }
             
             return super.visitVariable(node, type);
+        }
+
+        @Override
+        public Void visitLiteral(LiteralTree node, AnnotatedTypeMirror type) {
+            // Assume all literals are safe
+            type.replaceAnnotation(SAFE);
+            return super.visitLiteral(node, type);
         }
     }
 }
